@@ -447,7 +447,7 @@
     <div class="container">
         <div class="header">
             <h1><i class="fas fa-chart-line"></i> Sistema de Relatórios de Vendas</h1>
-            <p>Gera 120 gráficos individuais - um para cada um dos 30 melhores clientes por vendedora</p>
+            <p>Gera 120 gráficos individuais - um para cada um dos 30 melhores clientes por vendedor</p>
         </div>
 
         <div class="main-card">
@@ -487,7 +487,7 @@
                 </div>
                 <div class="feature-item">
                     <i class="fas fa-users"></i>
-                    <span>Clientes com múltiplas vendedoras</span>
+                    <span>Clientes com múltiplos vendedores</span>
                 </div>
                 <div class="feature-item">
                     <i class="fas fa-calculator"></i>
@@ -495,7 +495,7 @@
                 </div>
                 <div class="feature-item">
                     <i class="fas fa-ranking-star"></i>
-                    <span>Rankings corretos por vendedora</span>
+                    <span>Rankings corretos por vendedor</span>
                 </div>
                 <div class="feature-item">
                     <i class="fas fa-download"></i>
@@ -538,8 +538,8 @@
 
             <div class="main-card" id="multipleVendorsCard" style="display: none;">
                 <div class="card-header">
-                    <h2><i class="fas fa-users"></i> Clientes com Múltiplas Vendedoras</h2>
-                    <p>Clientes atendidos por 2 ou mais vendedoras terão relatórios especiais</p>
+                    <h2><i class="fas fa-users"></i> Clientes com Múltiplos Vendedores</h2>
+                    <p>Clientes atendidos por 2 ou mais vendedores terão relatórios especiais</p>
                 </div>
                 <div class="card-body">
                     <div class="client-list" id="multipleVendorsList">
@@ -549,7 +549,7 @@
             </div>
 
             <div id="chartsContainer">
-                <!-- Gráficos serão organizados por vendedora aqui -->
+                <!-- Gráficos serão organizados por vendedor aqui -->
             </div>
         </div>
     </div>
@@ -630,8 +630,8 @@
                     
                     updateProgress(60, 'Analisando vendas...');
                     
-                    // Processar dados
-                    dadosProcessados = processarDadosVendas(jsonData);
+                    // Processar dados com estrutura real
+                    dadosProcessados = processarDadosVendasReais(jsonData);
                     
                     updateProgress(100, 'Processamento concluído!');
                     
@@ -644,74 +644,146 @@
                 } catch (error) {
                     showProgress(false);
                     showAlert('error', 'Erro ao processar arquivo: ' + error.message);
+                    console.error('Erro detalhado:', error);
                 }
             };
             
             reader.readAsArrayBuffer(file);
         }
 
-        function processarDadosVendas(dados) {
-            // Processar dados de vendas
-            const vendedoras = {};
-            const clientes = {};
-            let totalRegistros = dados.length;
+        function processarDadosVendasReais(dados) {
+            console.log('Processando dados reais:', dados.length, 'registros');
+            console.log('Primeira linha:', dados[0]);
             
-            // Simular processamento (em implementação real, processar dados reais)
-            const vendedorasExemplo = [
-                'Jessica Maely Fleury Bueno',
-                'Julia Carolina Santiago Almeida',
-                'Maria Julia Gomes Freitas Silva',
-                'Micaelly dos Santos Silva'
-            ];
+            // Mapear colunas da estrutura real
+            const mapeamentoColunas = {
+                cliente: 'cliente',
+                vendedor: 'vendedor', 
+                data: 'data',
+                valor: 'total',
+                movimentacao: 'movimentacao'
+            };
             
-            const clientesExemplo = [
-                'Danielli Estefani', 'Tania Mara', 'Gabriela Machado', 'Amanda Lima',
-                'Adriana Ladres', 'Marina Gomes Vieira', 'Jessica Traguetto', 'Fernanda Yamada',
-                'Maria Eduarda Zeni', 'Rosilene Lucena', 'Lorena Ferreira', 'Thais Alencar',
-                'Tayane Cavalcante', 'Jayne Fernandes', 'Gabriela Teodoro', 'Jaqueline Martins',
-                'Luiza de Paula', 'Jessica Maely', 'Marcella Carvalho', 'Lidiane Mauriz',
-                'Eliete Braz', 'Herika Alline', 'Juliana Andrade', 'Kelly Dure',
-                'Glacielle Gomes', 'Taynara Queiroz', 'Consumidor Final', 'Talita Borges',
-                'Ana Flavia Martins', 'Francielle Zuquetto'
-            ];
+            // Processar dados por vendedor e cliente
+            const vendedoresDados = {};
+            const clientesMultiplos = {};
             
-            // Gerar dados simulados baseados nos dados reais
-            vendedorasExemplo.forEach(vendedora => {
-                vendedoras[vendedora] = {
-                    clientes: clientesExemplo.slice(0, 30).map((cliente, index) => ({
+            dados.forEach(registro => {
+                const cliente = registro[mapeamentoColunas.cliente];
+                const vendedor = registro[mapeamentoColunas.vendedor];
+                const valor = parseFloat(registro[mapeamentoColunas.valor]) || 0;
+                const data = new Date(registro[mapeamentoColunas.data]);
+                const ano = data.getFullYear();
+                const mes = data.getMonth(); // 0-11
+                
+                if (!cliente || !vendedor || isNaN(valor)) return;
+                
+                // Inicializar vendedor se não existir
+                if (!vendedoresDados[vendedor]) {
+                    vendedoresDados[vendedor] = {};
+                }
+                
+                // Inicializar cliente se não existir
+                if (!vendedoresDados[vendedor][cliente]) {
+                    vendedoresDados[vendedor][cliente] = {
                         nome: cliente,
-                        posicao: index + 1,
-                        vendas2024: Math.random() * 50000 + 10000,
-                        vendas2025: Math.random() * 30000 + 5000,
-                        dadosMensais2024: Array.from({length: 12}, () => Math.random() * 5000),
-                        dadosMensais2025: Array.from({length: 7}, () => Math.random() * 4000)
-                    }))
+                        vendas2024: 0,
+                        vendas2025: 0,
+                        dadosMensais2024: new Array(12).fill(0),
+                        dadosMensais2025: new Array(12).fill(0),
+                        totalGeral: 0
+                    };
+                }
+                
+                // Acumular valores
+                const clienteData = vendedoresDados[vendedor][cliente];
+                clienteData.totalGeral += valor;
+                
+                if (ano === 2024) {
+                    clienteData.vendas2024 += valor;
+                    clienteData.dadosMensais2024[mes] += valor;
+                } else if (ano === 2025) {
+                    clienteData.vendas2025 += valor;
+                    if (mes < 12) { // Garantir que não ultrapasse o array
+                        clienteData.dadosMensais2025[mes] += valor;
+                    }
+                }
+                
+                // Rastrear clientes com múltiplos vendedores
+                if (!clientesMultiplos[cliente]) {
+                    clientesMultiplos[cliente] = new Set();
+                }
+                clientesMultiplos[cliente].add(vendedor);
+            });
+            
+            // Processar top 30 por vendedor
+            const vendedoresProcessados = {};
+            const vendedoresList = Object.keys(vendedoresDados);
+            
+            vendedoresList.forEach(vendedor => {
+                const clientes = Object.values(vendedoresDados[vendedor]);
+                
+                // Ordenar por total geral (vendas 2024 + 2025)
+                clientes.sort((a, b) => b.totalGeral - a.totalGeral);
+                
+                // Pegar top 30
+                const top30 = clientes.slice(0, 30);
+                
+                // Adicionar posição
+                top30.forEach((cliente, index) => {
+                    cliente.posicao = index + 1;
+                });
+                
+                vendedoresProcessados[vendedor] = {
+                    clientes: top30,
+                    totalClientes: clientes.length,
+                    faturamentoTotal: clientes.reduce((sum, c) => sum + c.totalGeral, 0)
                 };
             });
             
-            const clientesMultiplos = [
-                {
-                    cliente: 'Consumidor final',
-                    vendedoras: [
-                        {vendedora: 'Jessica Maely', total2024: 45000, total2025: 14000},
-                        {vendedora: 'Micaelly Santos', total2024: 26000, total2025: 12000}
-                    ]
+            // Identificar clientes com múltiplos vendedores
+            const clientesComMultiplosVendedores = [];
+            Object.entries(clientesMultiplos).forEach(([cliente, vendedoresSet]) => {
+                if (vendedoresSet.size > 1) {
+                    const vendedoresInfo = Array.from(vendedoresSet).map(vendedor => {
+                        const clienteData = vendedoresDados[vendedor][cliente];
+                        return {
+                            vendedor: vendedor,
+                            total2024: clienteData.vendas2024,
+                            total2025: clienteData.vendas2025
+                        };
+                    });
+                    
+                    clientesComMultiplosVendedores.push({
+                        cliente: cliente,
+                        vendedores: vendedoresInfo
+                    });
                 }
-            ];
+            });
+            
+            const totalGraficos = vendedoresList.length * 30;
+            
+            console.log('Processamento concluído:', {
+                vendedores: vendedoresList.length,
+                totalGraficos: totalGraficos,
+                clientesMultiplos: clientesComMultiplosVendedores.length
+            });
             
             return {
-                totalRegistros,
-                vendedoras: vendedorasExemplo,
-                dadosVendedoras: vendedoras,
-                clientesUnicos: clientesExemplo.length * vendedorasExemplo.length,
+                totalRegistros: dados.length,
+                vendedores: vendedoresList,
+                dadosVendedores: vendedoresProcessados,
+                clientesUnicos: Object.keys(clientesMultiplos).length,
                 periodoInicio: '2024-01-01',
                 periodoFim: '2025-07-18',
-                clientesMultiplos,
-                totalGraficos: vendedorasExemplo.length * 30 // 4 vendedoras x 30 clientes = 120 gráficos
+                clientesMultiplos: clientesComMultiplosVendedores,
+                totalGraficos: totalGraficos
             };
         }
 
         function mostrarResultados(dados) {
+            console.log('Mostrando resultados:', dados);
+            
             // Mostrar estatísticas
             const statsGrid = document.getElementById('statsGrid');
             statsGrid.innerHTML = `
@@ -726,8 +798,8 @@
                     <div class="stat-icon" style="color: #56ab2f;">
                         <i class="fas fa-user-tie"></i>
                     </div>
-                    <div class="stat-number">${dados.vendedoras.length}</div>
-                    <div class="stat-label">Vendedoras</div>
+                    <div class="stat-number">${dados.vendedores.length}</div>
+                    <div class="stat-label">Vendedores</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon" style="color: #f093fb;">
@@ -738,10 +810,10 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon" style="color: #ff6b6b;">
-                        <i class="fas fa-calendar-alt"></i>
+                        <i class="fas fa-users"></i>
                     </div>
-                    <div class="stat-number">30</div>
-                    <div class="stat-label">Clientes por Vendedora</div>
+                    <div class="stat-number">${dados.clientesUnicos.toLocaleString()}</div>
+                    <div class="stat-label">Clientes Únicos</div>
                 </div>
             `;
 
@@ -750,7 +822,7 @@
             downloadButtons.innerHTML = `
                 <button class="btn" onclick="gerar120Graficos()">
                     <i class="fas fa-chart-bar"></i>
-                    Gerar 120 Gráficos Individuais
+                    Gerar ${dados.totalGraficos} Gráficos Individuais
                 </button>
             `;
 
@@ -764,11 +836,11 @@
                         <div>
                             <div class="client-name">${cliente.cliente}</div>
                             <div class="client-vendors">
-                                ${cliente.vendedoras.map(v => `${v.vendedora} (2024: R$ ${v.total2024.toLocaleString('pt-BR')} | 2025: R$ ${v.total2025.toLocaleString('pt-BR')})`).join(' • ')}
+                                ${cliente.vendedores.map(v => `${v.vendedor} (2024: R$ ${v.total2024.toLocaleString('pt-BR', {minimumFractionDigits: 2})} | 2025: R$ ${v.total2025.toLocaleString('pt-BR', {minimumFractionDigits: 2})})`).join(' • ')}
                             </div>
                         </div>
                         <div class="client-total">
-                            R$ ${(cliente.vendedoras.reduce((sum, v) => sum + v.total2024 + v.total2025, 0)).toLocaleString('pt-BR')}
+                            R$ ${(cliente.vendedores.reduce((sum, v) => sum + v.total2024 + v.total2025, 0)).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
                         </div>
                     </div>
                 `).join('');
@@ -787,6 +859,8 @@
             graficosCompletos = 0;
             graficosGerados = [];
 
+            console.log('Iniciando geração de', totalGraficos, 'gráficos');
+
             // Mostrar progresso
             document.getElementById('generationProgress').style.display = 'block';
             updateGenerationProgress();
@@ -795,27 +869,28 @@
             const chartsContainer = document.getElementById('chartsContainer');
             chartsContainer.innerHTML = '';
 
-            // Gerar gráficos por vendedora
-            dadosProcessados.vendedoras.forEach((vendedora, vendedoraIndex) => {
-                // Criar seção da vendedora
+            // Gerar gráficos por vendedor
+            dadosProcessados.vendedores.forEach((vendedor, vendedorIndex) => {
+                // Criar seção do vendedor
                 const vendorSection = document.createElement('div');
                 vendorSection.className = 'vendor-section';
                 vendorSection.innerHTML = `
                     <div class="vendor-title">
-                        <i class="fas fa-user"></i> ${vendedora} - 30 Gráficos Individuais
+                        <i class="fas fa-user"></i> ${vendedor} - 30 Gráficos Individuais
                     </div>
-                    <div class="charts-grid" id="charts-${vendedoraIndex}">
+                    <div class="charts-grid" id="charts-${vendedorIndex}">
                     </div>
                 `;
                 chartsContainer.appendChild(vendorSection);
 
-                const chartsGrid = document.getElementById(`charts-${vendedoraIndex}`);
+                const chartsGrid = document.getElementById(`charts-${vendedorIndex}`);
 
-                // Gerar gráfico para cada cliente desta vendedora
-                dadosProcessados.dadosVendedoras[vendedora].clientes.forEach((cliente, clienteIndex) => {
+                // Gerar gráfico para cada cliente deste vendedor
+                const clientesVendedor = dadosProcessados.dadosVendedores[vendedor].clientes;
+                clientesVendedor.forEach((cliente, clienteIndex) => {
                     setTimeout(() => {
-                        criarGraficoIndividual(chartsGrid, cliente, vendedora, vendedoraIndex, clienteIndex);
-                    }, (vendedoraIndex * 30 + clienteIndex) * 100); // Delay escalonado
+                        criarGraficoIndividual(chartsGrid, cliente, vendedor, vendedorIndex, clienteIndex);
+                    }, (vendedorIndex * 30 + clienteIndex) * 100); // Delay escalonado
                 });
             });
 
@@ -827,8 +902,8 @@
             }, totalGraficos * 100 + 2000);
         }
 
-        function criarGraficoIndividual(container, cliente, vendedora, vendedoraIndex, clienteIndex) {
-            const chartId = `chart-${vendedoraIndex}-${clienteIndex}`;
+        function criarGraficoIndividual(container, cliente, vendedor, vendedorIndex, clienteIndex) {
+            const chartId = `chart-${vendedorIndex}-${clienteIndex}`;
             
             // Criar container do gráfico
             const chartContainer = document.createElement('div');
@@ -836,7 +911,7 @@
             chartContainer.innerHTML = `
                 <div class="chart-title">
                     Faturamento Mensal para ${cliente.nome}<br>
-                    (Vendedor: ${vendedora.split(' ')[0]} ${vendedora.split(' ')[1]})
+                    (Vendedor: ${vendedor.split(' ')[0]} ${vendedor.split(' ')[1] || ''})
                 </div>
                 <canvas id="${chartId}" width="400" height="300"></canvas>
             `;
@@ -865,7 +940,7 @@
                             pointRadius: 6
                         }, {
                             label: '2025 Faturamento (Jan-Jul)',
-                            data: [...cliente.dadosMensais2025, ...Array(5).fill(null)],
+                            data: [...cliente.dadosMensais2025.slice(0, 7), ...Array(5).fill(null)],
                             borderColor: '#ff7f0e',
                             backgroundColor: 'rgba(255, 127, 14, 0.1)',
                             borderWidth: 3,
@@ -965,22 +1040,22 @@
             downloadButtons.innerHTML += `
                 <button class="btn btn-warning" onclick="baixarTodosGraficos()" style="margin-left: 10px;">
                     <i class="fas fa-download"></i>
-                    Baixar Todos os 120 Gráficos (ZIP)
+                    Baixar Todos os ${totalGraficos} Gráficos (ZIP)
                 </button>
             `;
         }
 
         function baixarTodosGraficos() {
             // Simular download de ZIP
-            showAlert('info', 'Preparando download dos 120 gráficos... Isso pode levar alguns segundos.');
+            showAlert('info', `Preparando download dos ${totalGraficos} gráficos... Isso pode levar alguns segundos.`);
             
             setTimeout(() => {
                 // Em implementação real, gerar ZIP com todos os gráficos
                 const link = document.createElement('a');
                 link.href = '#';
-                link.download = 'relatorios_120_graficos_' + new Date().toISOString().split('T')[0] + '.zip';
+                link.download = `relatorios_${totalGraficos}_graficos_` + new Date().toISOString().split('T')[0] + '.zip';
                 
-                showAlert('success', 'Download iniciado! (Funcionalidade simulada - 120 gráficos individuais)');
+                showAlert('success', `Download iniciado! (Funcionalidade simulada - ${totalGraficos} gráficos individuais)`);
             }, 2000);
         }
 
